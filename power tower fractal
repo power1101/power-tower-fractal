@@ -1,0 +1,112 @@
+import math
+from tkinter import *
+
+
+def counting(x):  # 소수점 자리수 계산
+    n = 0
+    while True:
+        if int(x) == x: return n
+        x = 10*x
+        n += 1
+
+def round_it(x,n):  # x를 유효숫자 n자리 까지
+    return round(x, n-int(math.floor(math.log10(abs(x))))-1)
+
+def angle(x, y):   # x+yi의 편각 계산
+    # return the principal angle of the number x+yi
+    if y == 0: return math.pi * (x < 0)
+    if x == 0: return math.pi / 2 + math.pi * (y < 0)
+    correction = 2 - abs(x * y) / (x * y) - abs(y) / y
+    return math.atan(y / x) + correction * math.pi / 2
+
+def r(x, y, c_x, c_y):   # (c_x+c_yi)^(x+yi)의 실수 부분 계산
+    # the real part of the complex exponential (c_x+c_yi)^(x+yi)
+    return math.exp(x * math.log(math.hypot(c_x, c_y)) - y * angle(c_x, c_y)) * math.cos(y * math.log(math.hypot(c_x, c_y)) + x * angle(c_x, c_y))
+
+
+def i(x, y, c_x, c_y):   # (c_x+c_yi)^(x+yi)의 허수 부분 계산
+    # the imaginary part of the complex exponential (c_x+c_yi)^(x+yi)
+    return math.exp(x * math.log(math.hypot(c_x, c_y)) - y * angle(c_x, c_y)) * math.sin(y * math.log(math.hypot(c_x, c_y)) + x * angle(c_x, c_y))
+
+def d(x,y):   # power tower 함수 수렴 여부 판단
+    max_n = 300
+    n = 0
+    a, b = x, y
+    while n < max_n:
+        try: x, y = r(x,y,a,b), i(x,y,a,b)
+        except: break
+        n += 1
+    if n == max_n: return True
+    else: return False
+
+
+def coordinate(event):
+    n, a, b = NAB[0], NAB[1], NAB[2]
+    x, y = event.x, event.y
+    x, y = a + n*(x - 300)/2, b + n*(300 - y)/2
+    print(f'{x}, {y}')
+
+lst=[0,0]
+def rerun_1(event):
+    n, a, b = NAB[0], NAB[1], NAB[2]
+    x, y = event.x, event.y
+    x, y = a + n*(x - 300)/2, b + n*(300 - y)/2
+    x, y = float(f'{x:.{counting(n)}f}'), float(f'{y:.{counting(n)}f}')
+    q=lst
+    q.clear()
+    q.insert(0,x)
+    q.insert(1,y)
+    print(f'{lst}click-coordinate)')
+
+def rerun_2(event):
+    n, a, b = NAB[0], NAB[1], NAB[2]
+    x, y = event.x, event.y
+    x, y = a + n * (x - 300) / 2, b + n * (300 - y) / 2
+    x, y = float(f'{x:.{counting(n)}f}'), float(f'{y:.{counting(n)}f}')
+    print(f'{[x,y]}click-coordinate)')
+    A = (lst[0]+x)/2
+    B = (lst[1]+y)/2
+    N = abs(lst[0]-x)/200
+    print(f'{N},{A},{B} - n,a,b')
+    creat(N, A, B)
+
+def creat(n, a, b): # range: {x+yi|a-100*n < x < a+100*n, b-100*n < y < b+100*n}
+    n = round_it(n, 2)
+    a = float(f'{a:.{counting(n)}f}')
+    b = float(f'{b:.{counting(n)}f}')
+    nab = NAB
+    nab.clear()
+    nab.insert(0,n)
+    nab.insert(1,a)
+    nab.insert(2,b)
+    monitor = Tk()
+    monitor.geometry("600x600")
+    monitor.title('1101 김동건')
+    board = Canvas(monitor, bg="white", height=600, width=600)
+    board.pack()
+    plane = board.create_rectangle((100, 100, 500, 500), fill='gray')
+    for x in range(-100,100):
+        for y in range(-100, 100):
+            if d(a+x * n,b+ y * n):
+                dot = board.create_rectangle((300 + 2*x, 300 - 2*y, 300 + 2*x, 300 - 2*y), outline = 'black')
+
+    for x in range(1,6):
+        mark = board.create_line(x*100, 500, x*100, 520)
+        text = board.create_text(x*100, 530, text=  f'{a+50*n*(x-3):.{counting(n)}f}')
+
+    for y in range(1,6):
+        mark = board.create_line(100, y*100, 80, y*100)
+        text = board.create_text(60, y*100, text = f'{b+50*n*(3-y):.{counting(n)}f}')
+
+    text = board.create_text(300, 40, text = 'power tower fractal', font = ('arial', 30))
+
+    board.bind('<Button-1>', coordinate)
+
+    board.bind('<Button-3>', rerun_1)
+    board.bind('<ButtonRelease-3>', rerun_2)
+
+    monitor.mainloop()
+
+NAB = [0,0,0]
+n, a, b = float(input('n:')), float(input('a:')), float(input('b:'))
+creat(n, a, b)
